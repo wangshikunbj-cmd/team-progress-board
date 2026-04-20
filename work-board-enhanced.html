@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>工作进度看板（增强版）</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .header {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            font-size: 28px;
+            color: #333;
+            margin-bottom: 16px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #48bb78;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #38a169;
+        }
+
+        .btn-danger {
+            background: #f56565;
+            color: white;
+            padding: 4px 8px;
+            font-size: 12px;
+        }
+
+        .btn-danger:hover {
+            background: #e53e3e;
+        }
+
+        .filter-buttons {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .filter-btn {
+            padding: 6px 12px;
+            border: 2px solid #e2e8f0;
+            background: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.3s;
+        }
+
+        .filter-btn:hover {
+            border-color: #667eea;
+            color: #667eea;
+        }
+
+        .filter-btn.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .board-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .column {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            min-height: 400px;
+        }
+
+        .column-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        .column-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #2d3748;
+        }
+
+        .column-count {
+            background: #edf2f7;
+            color: #4a5568;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .add-task-btn {
+            width: 100%;
+            padding: 10px;
+            border: 2px dashed #cbd5e0;
+            background: transparent;
+            border-radius: 8px;
+            cursor: pointer;
+            color: #718096;
+            font-size: 14px;
+            margin-bottom: 12px;
+            transition: all 0.3s;
+        }
+
+        .add-task-btn:hover {
+            border-color: #667eea;
+            color: #667eea;
+            background: rgba(102, 126, 234, 0.05);
+        }
+
+        .tasks {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            overflow-y: auto;
+        }
+
+        .task-card {
+            background: white;
+            border-radius: 10px;
+            padding: 14px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            border-left: 4px solid #667eea;
+            transition: all 0.3s;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .task-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+        }
+
+        .task-card.hidden {
+            display: none;
+        }
+
+        .task-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 8px;
+        }
+
+        .task-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: #2d3748;
+            flex: 1;
+        }
+
+        .priority {
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-left: 8px;
+        }
+
+        .priority-high {
+            background: #fed7d7;
+            color: #c53030;
+        }
+
+        .priority-medium {
+            background: #feebc8;
+            color: #c05621;
+        }
+
+        .priority-low {
+            background: #c6f6d5;
+            color: #276749;
+        }
+
+        .task-meta {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            font-size: 13px;
+            color: #718096;
+            margin-top: 10px;
+        }
+
+        .task-assignee {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .task-deadline {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .task-collaborators {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .collaborator-tag {
+            background: #edf2f7;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+
+        .delete-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .task-card:hover .delete-btn {
+            opacity: 1;
+        }
+
+        .timeline {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .timeline h2 {
+            font-size: 20px;
+            color: #2d3748;
+            margin-bottom: 20px;
+        }
+
+        .timeline-items {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .timeline-item {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            background: #f7fafc;
+            border-radius: 8px;
+            gap: 12px;
+        }
+
+        .timeline-date {
+            font-weight: 600;
+            color: #667eea;
+            min-width: 90px;
+        }
+
+        .timeline-task {
+            flex: 1;
+        }
+
+        .timeline-assignee {
+            color: #718096;
+            font-size: 14px;
+        }
+
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        .modal-header {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: #2d3748;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            color: #4a5568;
+            margin-bottom: 6px;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+
+        .btn-cancel {
+            background: #e2e8f0;
+            color: #4a5568;
+        }
+
+        .btn-cancel:hover {
+            background: #cbd5e0;
+        }
+
+        @media (max-width: 768px) {
+            .board-container {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>📊 团队工作进度看板（增强版）</h1>
+        <div class="controls">
+            <button class="btn btn-primary" onclick="app.exportData()">📤 导出数据</button>
+            <button class="btn btn-secondary" onclick="app.importData()">📥 导入数据</button>
+            <button class="btn btn-primary" onclick="app.resetDemo()">🔄 恢复示例数据</button>
+        </div>
+        <div class="filter-buttons">
+            <button class="filter-btn active" onclick="app.filterByPerson('all')">全部</button>
+            <button class="filter-btn" onclick="app.filterByPerson('王士坤')">👤 王士坤</button>
+            <button class="filter-btn" onclick="app.filterByPerson('王茜')">👤 王茜</button>
+            <button class="filter-btn" onclick="app.filterByPerson('陈晓逸')">👤 陈晓逸</button>
+            <button class="filter-btn" onclick="app.filterByPerson('张静')">👤 张静</button>
+        </div>
+    </div>
+
+    <div class="board-container" id="board">
+        <!-- Columns will be rendered here -->
+    </div>
+
+    <div class="timeline">
+        <h2>📅 DDL 时间线</h2>
+        <div class="timeline-items" id="timeline">
+            <!-- Timeline will be rendered here -->
+        </div>
+    </div>
+
+    <!-- Task Edit/Add Modal -->
+    <div class="modal" id="taskModal">
+        <div class="modal-content">
+            <div class="modal-header" id="modalTitle">编辑任务</div>
+            <form id="taskForm">
+                <div class="form-group">
+                    <label>任务标题</label>
+                    <input type="text" id="taskTitle" required>
+                </div>
+                <div class="form-group">
+                    <label>负责人</label>
+                    <select id="taskAssignee" required>
+                        <option value="王士坤">王士坤</option>
+                        <option value="王茜">王茜</option>
+                        <option value="陈晓逸">陈晓逸</option>
+                        <option value="张静">张静</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>优先级</label>
+                    <select id="taskPriority" required>
+                        <option value="high">高</option>
+                        <option value="medium">中</option>
+                        <option value="low">低</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>截止日期</label>
+                    <input type="date" id="taskDeadline" required>
+                </div>
+                <div class="form-group">
+                    <label>协作者（用逗号分隔）</label>
+                    <input type="text" id="taskCollaborators" placeholder="例如: 王茜, 陈晓逸">
+                </div>
+                <div class="form-group">
+                    <label>状态</label>
+                    <select id="taskStatus" required>
+                        <option value="todo">待办</option>
+                        <option value="inProgress">进行中</option>
+                        <option value="review">待确认</option>
+                        <option value="done">已完成</option>
+                    </select>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-cancel" onclick="app.closeModal()">取消</button>
+                    <button type="submit" class="btn btn-primary">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <input type="file" id="fileInput" accept=".json" style="display:none" onchange="app.handleFileImport(event)">
+
+    <script>
+        const app = {
+            data: {
+                columns: [
+                    { id: 'todo', title: '待办', color: '#667eea' },
+                    { id: 'inProgress', title: '进行中', color: '#48bb78' },
+                    { id: 'review', title: '待确认', color: '#ed8936' },
+                    { id: 'done', title: '已完成', color: '#38b2ac' }
+                ],
+                tasks: [],
+                currentFilter: 'all',
+                editingTask: null
+            },
+
+            init() {
+                this.loadData();
+                this.render();
+            },
+
+            loadData() {
+                const saved = localStorage.getItem('workBoardData');
+                if (saved) {
+                    this.data.tasks = JSON.parse(saved);
+                } else {
+                    this.resetDemo();
+                }
+            },
+
+            saveData() {
+                localStorage.setItem('workBoardData', JSON.stringify(this.data.tasks));
+            },
+
+            resetDemo() {
+                this.data.tasks = [
+                    { id: 1, title: '完成Q1季度报告', assignee: '王士坤', priority: 'high', deadline: '2024-03-15', status: 'inProgress', collaborators: ['王茜'] },
+                    { id: 2, title: '优化用户登录流程', assignee: '王茜', priority: 'medium', deadline: '2024-03-20', status: 'todo', collaborators: ['陈晓逸'] },
+                    { id: 3, title: '修复移动端适配问题', assignee: '陈晓逸', priority: 'high', deadline: '2024-03-12', status: 'review', collaborators: [] },
+                    { id: 4, title: '更新API文档', assignee: '张静', priority: 'low', deadline: '2024-03-25', status: 'todo', collaborators: [] },
+                    { id: 5, title: '测试支付模块', assignee: '王士坤', priority: 'high', deadline: '2024-03-18', status: 'inProgress', collaborators: ['王茜', '张静'] },
+                    { id: 6, title: '设计新功能原型', assignee: '王茜', priority: 'medium', deadline: '2024-03-22', status: 'done', collaborators: [] },
+                    { id: 7, title: '代码审查', assignee: '陈晓逸', priority: 'medium', deadline: '2024-03-14', status: 'inProgress', collaborators: ['王士坤'] },
+                    { id: 8, title: '准备技术分享', assignee: '张静', priority: 'low', deadline: '2024-03-28', status: 'todo', collaborators: [] }
+                ];
+                this.saveData();
+                this.render();
+            },
+
+            render() {
+                this.renderBoard();
+                this.renderTimeline();
+            },
+
+            renderBoard() {
+                const board = document.getElementById('board');
+                board.innerHTML = '';
+
+                this.data.columns.forEach(column => {
+                    const tasks = this.data.tasks.filter(t => t.status === column.id);
+                    const columnEl = document.createElement('div');
+                    columnEl.className = 'column';
+                    columnEl.innerHTML = `
+                        <div class="column-header">
+                            <span class="column-title">${column.title}</span>
+                            <span class="column-count">${tasks.length}</span>
+                        </div>
+                        <button class="add-task-btn" onclick="app.openAddTaskModal('${column.id}')">
+                            ➕ 添加任务
+                        </button>
+                        <div class="tasks">
+                            ${tasks.map(task => this.renderTask(task)).join('')}
+                        </div>
+                    `;
+                    board.appendChild(columnEl);
+                });
+
+                this.applyFilter();
+            },
+
+            renderTask(task) {
+                const priorityClass = `priority-${task.priority}`;
+                const priorityText = { high: '高', medium: '中', low: '低' }[task.priority];
+                return `
+                    <div class="task-card" data-assignee="${task.assignee}" onclick="app.openEditTaskModal(${task.id})">
+                        <div class="task-header">
+                            <span class="task-title">${task.title}</span>
+                            <span class="priority ${priorityClass}">${priorityText}</span>
+                        </div>
+                        <div class="task-meta">
+                            <div class="task-assignee">👤 ${task.assignee}</div>
+                            <div class="task-deadline">📅 ${task.deadline}</div>
+                            ${task.collaborators.length > 0 ? `
+                                <div class="task-collaborators">
+                                    🤝 ${task.collaborators.map(c => `<span class="collaborator-tag">${c}</span>`).join('')}
+                                </div>
+                            ` : ''}
+                        </div>
+                        <button class="btn btn-danger delete-btn" onclick="event.stopPropagation(); app.deleteTask(${task.id})">🗑️</button>
+                    </div>
+                `;
+            },
+
+            renderTimeline() {
+                const timeline = document.getElementById('timeline');
+                const sortedTasks = [...this.data.tasks].sort((a, b) =>
+                    new Date(a.deadline) - new Date(b.deadline)
+                );
+
+                timeline.innerHTML = sortedTasks.map(task => `
+                    <div class="timeline-item">
+                        <div class="timeline-date">${task.deadline}</div>
+                        <div class="timeline-task">${task.title}</div>
+                        <div class="timeline-assignee">${task.assignee}</div>
+                    </div>
+                `).join('');
+            },
+
+            filterByPerson(person) {
+                this.data.currentFilter = person;
+
+                // Update filter buttons
+                document.querySelectorAll('.filter-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                event.target.classList.add('active');
+
+                this.applyFilter();
+            },
+
+            applyFilter() {
+                const cards = document.querySelectorAll('.task-card');
+                cards.forEach(card => {
+                    const assignee = card.getAttribute('data-assignee');
+                    if (this.data.currentFilter === 'all' || assignee === this.data.currentFilter) {
+                        card.classList.remove('hidden');
+                    } else {
+                        card.classList.add('hidden');
+                    }
+                });
+            },
+
+            openAddTaskModal(status) {
+                this.data.editingTask = null;
+                document.getElementById('modalTitle').textContent = '添加新任务';
+                document.getElementById('taskForm').reset();
+                document.getElementById('taskStatus').value = status;
+                document.getElementById('taskModal').classList.add('active');
+            },
+
+            openEditTaskModal(taskId) {
+                const task = this.data.tasks.find(t => t.id === taskId);
+                if (!task) return;
+
+                this.data.editingTask = task;
+                document.getElementById('modalTitle').textContent = '编辑任务';
+                document.getElementById('taskTitle').value = task.title;
+                document.getElementById('taskAssignee').value = task.assignee;
+                document.getElementById('taskPriority').value = task.priority;
+                document.getElementById('taskDeadline').value = task.deadline;
+                document.getElementById('taskCollaborators').value = task.collaborators.join(', ');
+                document.getElementById('taskStatus').value = task.status;
+                document.getElementById('taskModal').classList.add('active');
+            },
+
+            closeModal() {
+                document.getElementById('taskModal').classList.remove('active');
+                this.data.editingTask = null;
+            },
+
+            deleteTask(taskId) {
+                if (confirm('确定要删除这个任务吗？')) {
+                    this.data.tasks = this.data.tasks.filter(t => t.id !== taskId);
+                    this.saveData();
+                    this.render();
+                }
+            },
+
+            exportData() {
+                const dataStr = JSON.stringify(this.data.tasks, null, 2);
+                const blob = new Blob([dataStr], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `work-board-${new Date().toISOString().split('T')[0]}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+            },
+
+            importData() {
+                document.getElementById('fileInput').click();
+            },
+
+            handleFileImport(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const tasks = JSON.parse(e.target.result);
+                        this.data.tasks = tasks;
+                        this.saveData();
+                        this.render();
+                        alert('导入成功！');
+                    } catch (err) {
+                        alert('导入失败，文件格式错误');
+                    }
+                };
+                reader.readAsText(file);
+            }
+        };
+
+        // Handle form submission
+        document.getElementById('taskForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+
+            const taskData = {
+                title: document.getElementById('taskTitle').value,
+                assignee: document.getElementById('taskAssignee').value,
+                priority: document.getElementById('taskPriority').value,
+                deadline: document.getElementById('taskDeadline').value,
+                status: document.getElementById('taskStatus').value,
+                collaborators: document.getElementById('taskCollaborators').value
+                    .split(',')
+                    .map(c => c.trim())
+                    .filter(c => c)
+            };
+
+            if (app.data.editingTask) {
+                // Edit existing task
+                Object.assign(app.data.editingTask, taskData);
+            } else {
+                // Add new task
+                taskData.id = Date.now();
+                app.data.tasks.push(taskData);
+            }
+
+            app.saveData();
+            app.closeModal();
+            app.render();
+        });
+
+        // Close modal when clicking outside
+        document.getElementById('taskModal').addEventListener('click', (e) => {
+            if (e.target.id === 'taskModal') {
+                app.closeModal();
+            }
+        });
+
+        // Initialize app
+        app.init();
+    </script>
+</body>
+</html>
