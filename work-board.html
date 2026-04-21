@@ -22,6 +22,29 @@
   }
   .header h1 { font-size: 20px; font-weight: 600; color: #fff; }
   .header .meta { font-size: 12px; color: rgba(255,255,255,0.4); }
+  .header .data-source {
+    font-size: 10px; color: rgba(107,207,255,0.6);
+    margin-top: 2px;
+  }
+
+  /* 加载状态 */
+  .loading {
+    display: flex; align-items: center; justify-content: center;
+    min-height: 200px; color: rgba(255,255,255,0.5);
+    font-size: 16px;
+  }
+  .loading .spinner {
+    width: 24px; height: 24px; border: 3px solid rgba(255,255,255,0.1);
+    border-top-color: #6bcfff; border-radius: 50%;
+    animation: spin 0.8s linear infinite; margin-right: 12px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .error-banner {
+    padding: 12px 28px; background: rgba(255,107,107,0.15);
+    color: #ff6b6b; font-size: 13px; text-align: center;
+    display: none;
+  }
 
   /* 列头 */
   .col-labels {
@@ -169,7 +192,7 @@
   .countdown.week { background: rgba(107,207,255,0.1); color: #6bcfff; }
   .countdown.far { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.3); }
 
-  .empty-cell { 
+  .empty-cell {
     display: flex; align-items: center; justify-content: center;
     color: rgba(255,255,255,0.1); font-size: 11px;
     min-height: 40px;
@@ -324,9 +347,13 @@
 <body>
 
 <div class="header">
-  <h1>📋 团队工作看板</h1>
+  <div>
+    <h1>📋 团队工作看板</h1>
+    <div class="data-source" id="dataSource">数据加载中...</div>
+  </div>
   <div class="meta">更新时间：<span id="updateTime"></span></div>
 </div>
+<div class="error-banner" id="errorBanner"></div>
 <div class="hint-bar">💡 点击某个人的头像/名字可高亮筛选，再点取消</div>
 <div class="col-labels">
   <div class="spacer"></div>
@@ -335,41 +362,61 @@
   <div class="col-label"><div class="dot blocked"></div>🚫 待确认</div>
   <div class="col-label"><div class="dot done"></div>✅ 已完成</div>
 </div>
-<div id="boardContainer"></div>
+<div id="boardContainer">
+  <div class="loading"><div class="spinner"></div>正在加载看板数据...</div>
+</div>
 <div class="timeline" id="timeline"></div>
 
 <script>
 const NOW = new Date();
-const PERSON_COLORS = {
-  '张静': 'linear-gradient(135deg, #667eea, #764ba2)',
-  '王茜': 'linear-gradient(135deg, #f093fb, #f5576c)',
-  '陈晓逸': 'linear-gradient(135deg, #4facfe, #00f2fe)',
-  '王士坤': 'linear-gradient(135deg, #43e97b, #38f9d7)',
-  '王栖': 'linear-gradient(135deg, #fa709a, #fee140)',
-};
-const PEOPLE = ['王士坤', '王茜', '陈晓逸', '张静'];
+let PERSON_COLORS = {};
+let PEOPLE = [];
+let cards = [];
 let activeFilter = null;
 
-const cards = [
-  { id:'1a', project:'成交转化调研', title:'确定选择哪些竞品', desc:'斑马和竞品体验课转正调研', owners:['张静','王栖'], status:'doing', priority:'high', ddl:'2026-04-17T18:00:00' },
-  { id:'1b', project:'成交转化调研', title:'确定调研报告重点关注部分', desc:'调研报告的结构和重点方向', owners:['张静','王栖'], status:'todo', priority:'high', ddl:null },
-  { id:'1c', project:'成交转化调研', title:'调研报告产出', desc:'完成完整的调研报告', owners:['张静','王栖'], status:'todo', priority:'high', ddl:'2026-05-15T18:00:00' },
-  { id:'2a', project:'系统课视频拍摄', title:'确定第一批拍摄方向', desc:'观看账号视频、暴姐视频筛选优先级', owners:['王茜'], status:'doing', priority:'high', ddl:'2026-04-20T18:00:00' },
-  { id:'2b', project:'系统课视频拍摄', title:'确定视频风格', desc:'视频风格问题待确认', owners:['王茜'], status:'todo', priority:'high', ddl:null },
-  { id:'2c', project:'系统课视频拍摄', title:'拍摄一批主页视频且剪辑完成', desc:'', owners:['王茜'], status:'todo', priority:'high', ddl:'2026-04-27T18:00:00' },
-  { id:'3a', project:'代理商主播筛选', title:'完成代理商主播筛选建议', desc:'', owners:['张静','王茜'], status:'doing', priority:'high', ddl:'2026-04-17T18:00:00' },
-  { id:'4a', project:'组品策略', title:'测试方案（价格、策略等）', desc:'', owners:['王茜'], status:'doing', priority:'medium', ddl:'2026-04-27T18:00:00' },
-  { id:'6a', project:'绘本机项目', title:'AI素材专项产出20条', desc:'增加AI素材权重，当成专项来做', owners:['陈晓逸'], status:'doing', priority:'high', ddl:null },
-  { id:'6b', project:'绘本机项目', title:'混剪素材前3秒开头优化', desc:'跑量素材混剪，手动处理提供代理样本量', owners:['陈晓逸'], status:'doing', priority:'high', ddl:'2026-04-22T18:00:00' },
-  { id:'7a', project:'系统课投放', title:'系统课投放方案沟通', desc:'投放项目交流及方案讨论中', owners:['陈晓逸'], status:'blocked', priority:'medium', ddl:null },
-  { id:'7b', project:'微信豆投放', title:'微信豆投放复盘和方案对齐', desc:'讨论中，还没有方向', owners:['陈晓逸'], status:'blocked', priority:'medium', ddl:null },
-  { id:'8a', project:'系统课代理直播', title:'敲定代理商选择并推进流程', desc:'确定哪家代理商，下周开始推进直播流程', owners:['王士坤'], status:'doing', priority:'high', ddl:null },
-  { id:'5a', project:'工作细节', title:'体验课178节素养课资料', desc:'', owners:['王士坤'], status:'todo', priority:'low', ddl:null },
-  { id:'5b', project:'工作细节', title:'工具效率建设', desc:'', owners:['王士坤'], status:'todo', priority:'low', ddl:null },
-  { id:'5c', project:'工作细节', title:'素材拍摄时间沟通确定', desc:'', owners:['王士坤'], status:'todo', priority:'low', ddl:null },
-];
+// 从外部 JSON 加载数据
+async function loadData() {
+  try {
+    // 添加时间戳防止缓存
+    const cacheBuster = '?t=' + Date.now();
+    const response = await fetch('data/tasks.json' + cacheBuster);
+    if (!response.ok) throw new Error('HTTP ' + response.status);
+    const data = await response.json();
 
-// 工具
+    // 解析数据
+    PERSON_COLORS = data.personColors || {};
+    PEOPLE = data.people || [];
+    cards = data.tasks || [];
+
+    // 更新元信息
+    const meta = data.meta || {};
+    if (meta.updatedAt) {
+      const dt = new Date(meta.updatedAt);
+      document.getElementById('updateTime').textContent =
+        dt.toLocaleDateString('zh-CN') + ' ' + dt.toLocaleTimeString('zh-CN', {hour:'2-digit', minute:'2-digit'});
+    } else {
+      document.getElementById('updateTime').textContent =
+        NOW.toLocaleDateString('zh-CN') + ' ' + NOW.toLocaleTimeString('zh-CN', {hour:'2-digit', minute:'2-digit'});
+    }
+
+    document.getElementById('dataSource').textContent =
+      '📡 数据来源: data/tasks.json' + (meta.updatedBy ? ' | 更新者: ' + meta.updatedBy : '');
+
+    // 渲染
+    renderBoard();
+    renderTimeline();
+
+  } catch (err) {
+    console.error('加载数据失败:', err);
+    document.getElementById('errorBanner').style.display = 'block';
+    document.getElementById('errorBanner').textContent =
+      '⚠️ 数据加载失败: ' + err.message + '。请确认 data/tasks.json 文件存在。';
+    document.getElementById('boardContainer').innerHTML =
+      '<div class="loading" style="color:#ff6b6b;">❌ 数据加载失败，请检查 data/tasks.json</div>';
+  }
+}
+
+// 工具函数
 function diffDays(ddl) { return ddl ? (new Date(ddl) - NOW) / 86400000 : 999; }
 function countdownLabel(ddl) {
   if (!ddl) return null;
@@ -485,25 +532,6 @@ function renderTimeline() {
     if (d < 1.5) dotColor = '#ff6b6b';
     else if (d < 5) dotColor = '#ffd93d';
 
-    // 上下交替：偶数上，奇数下
-    const cardsHtml = g.items.map((e, ei) => {
-      const pc = pColor(e.project);
-      const cd = countdownLabel(e.date);
-      const pos = (idx + ei) % 2 === 0 ? 'tl-card-up' : 'tl-card-down';
-      const ownersHtml = e.owners.map(o =>
-        `<span class="tl-mini-av" style="background:${PERSON_COLORS[o]||'#555'}">${o[0]}</span>`
-      ).join('');
-
-      return `<div class="${pos}" style="${g.items.length > 1 && ei > 0 ? 'margin-left:' + (ei * 8) + 'px;' : ''}">
-        <div class="tl-card">
-          <div class="tl-c-project"><span class="tl-c-tag" style="color:${pc};border:1px solid ${pc}40">${e.project}</span></div>
-          <div class="tl-c-title">${e.text}</div>
-          <div class="tl-c-owners">${ownersHtml} ${e.owners.join('、')}</div>
-          ${cd ? `<div class="tl-c-cd"><span class="countdown ${cd.cls}">${cd.text}</span></div>` : ''}
-        </div>
-      </div>`;
-    });
-
     // 对于同日期多事件，分上下
     let upCards = '', downCards = '';
     g.items.forEach((e, ei) => {
@@ -541,10 +569,8 @@ function renderTimeline() {
     </div>`;
 }
 
-document.getElementById('updateTime').textContent =
-  NOW.toLocaleDateString('zh-CN') + ' ' + NOW.toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'});
-renderBoard();
-renderTimeline();
+// 启动
+loadData();
 </script>
 </body>
 </html>

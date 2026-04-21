@@ -29,6 +29,12 @@
         .header h1 {
             font-size: 28px;
             color: #333;
+            margin-bottom: 8px;
+        }
+
+        .data-info {
+            font-size: 12px;
+            color: #718096;
             margin-bottom: 16px;
         }
 
@@ -68,6 +74,15 @@
             background: #38a169;
         }
 
+        .btn-warning {
+            background: #ed8936;
+            color: white;
+        }
+
+        .btn-warning:hover {
+            background: #dd6b20;
+        }
+
         .btn-danger {
             background: #f56565;
             color: white;
@@ -83,6 +98,7 @@
             display: flex;
             gap: 8px;
             margin-top: 12px;
+            flex-wrap: wrap;
         }
 
         .filter-btn {
@@ -194,6 +210,10 @@
             display: none;
         }
 
+        .task-card.priority-high { border-left-color: #f56565; }
+        .task-card.priority-medium { border-left-color: #ed8936; }
+        .task-card.priority-low { border-left-color: #48bb78; }
+
         .task-header {
             display: flex;
             justify-content: space-between;
@@ -216,17 +236,17 @@
             margin-left: 8px;
         }
 
-        .priority-high {
+        .priority-high-tag {
             background: #fed7d7;
             color: #c53030;
         }
 
-        .priority-medium {
+        .priority-medium-tag {
             background: #feebc8;
             color: #c05621;
         }
 
-        .priority-low {
+        .priority-low-tag {
             background: #c6f6d5;
             color: #276749;
         }
@@ -244,6 +264,21 @@
             display: flex;
             align-items: center;
             gap: 6px;
+        }
+
+        .task-project {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .project-tag {
+            background: #ebf4ff;
+            color: #3182ce;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
         }
 
         .task-deadline {
@@ -309,17 +344,38 @@
         .timeline-date {
             font-weight: 600;
             color: #667eea;
-            min-width: 90px;
+            min-width: 100px;
         }
 
         .timeline-task {
             flex: 1;
         }
 
+        .timeline-project {
+            font-size: 12px;
+            color: #3182ce;
+            background: #ebf4ff;
+            padding: 2px 8px;
+            border-radius: 4px;
+            margin-right: 8px;
+        }
+
         .timeline-assignee {
             color: #718096;
             font-size: 14px;
         }
+
+        .deadline-warning {
+            font-size: 11px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 600;
+            margin-left: 8px;
+        }
+
+        .deadline-overdue { background: #fed7d7; color: #c53030; }
+        .deadline-today { background: #fed7d7; color: #e53e3e; }
+        .deadline-soon { background: #feebc8; color: #c05621; }
 
         /* Modal styles */
         .modal {
@@ -411,17 +467,14 @@
 <body>
     <div class="header">
         <h1>📊 团队工作进度看板（增强版）</h1>
+        <div class="data-info" id="dataInfo">数据加载中...</div>
         <div class="controls">
             <button class="btn btn-primary" onclick="app.exportData()">📤 导出数据</button>
             <button class="btn btn-secondary" onclick="app.importData()">📥 导入数据</button>
-            <button class="btn btn-primary" onclick="app.resetDemo()">🔄 恢复示例数据</button>
+            <button class="btn btn-warning" onclick="app.reloadFromJSON()">🔄 从 JSON 重新加载</button>
         </div>
-        <div class="filter-buttons">
-            <button class="filter-btn active" onclick="app.filterByPerson('all')">全部</button>
-            <button class="filter-btn" onclick="app.filterByPerson('王士坤')">👤 王士坤</button>
-            <button class="filter-btn" onclick="app.filterByPerson('王茜')">👤 王茜</button>
-            <button class="filter-btn" onclick="app.filterByPerson('陈晓逸')">👤 陈晓逸</button>
-            <button class="filter-btn" onclick="app.filterByPerson('张静')">👤 张静</button>
+        <div class="filter-buttons" id="filterButtons">
+            <button class="filter-btn active" onclick="app.filterByPerson('all', event)">全部</button>
         </div>
     </div>
 
@@ -446,12 +499,13 @@
                     <input type="text" id="taskTitle" required>
                 </div>
                 <div class="form-group">
+                    <label>所属项目</label>
+                    <input type="text" id="taskProject" placeholder="例如: 成交转化调研">
+                </div>
+                <div class="form-group">
                     <label>负责人</label>
                     <select id="taskAssignee" required>
-                        <option value="王士坤">王士坤</option>
-                        <option value="王茜">王茜</option>
-                        <option value="陈晓逸">陈晓逸</option>
-                        <option value="张静">张静</option>
+                        <!-- 动态填充 -->
                     </select>
                 </div>
                 <div class="form-group">
@@ -464,7 +518,11 @@
                 </div>
                 <div class="form-group">
                     <label>截止日期</label>
-                    <input type="date" id="taskDeadline" required>
+                    <input type="datetime-local" id="taskDeadline">
+                </div>
+                <div class="form-group">
+                    <label>描述</label>
+                    <textarea id="taskDesc" rows="2" placeholder="任务描述（可选）"></textarea>
                 </div>
                 <div class="form-group">
                     <label>协作者（用逗号分隔）</label>
@@ -474,8 +532,8 @@
                     <label>状态</label>
                     <select id="taskStatus" required>
                         <option value="todo">待办</option>
-                        <option value="inProgress">进行中</option>
-                        <option value="review">待确认</option>
+                        <option value="doing">进行中</option>
+                        <option value="blocked">待确认</option>
                         <option value="done">已完成</option>
                     </select>
                 </div>
@@ -493,47 +551,114 @@
         const app = {
             data: {
                 columns: [
-                    { id: 'todo', title: '待办', color: '#667eea' },
-                    { id: 'inProgress', title: '进行中', color: '#48bb78' },
-                    { id: 'review', title: '待确认', color: '#ed8936' },
-                    { id: 'done', title: '已完成', color: '#38b2ac' }
+                    { id: 'todo', title: '📝 待办', color: '#667eea' },
+                    { id: 'doing', title: '🔥 进行中', color: '#48bb78' },
+                    { id: 'blocked', title: '🚫 待确认', color: '#ed8936' },
+                    { id: 'done', title: '✅ 已完成', color: '#38b2ac' }
                 ],
                 tasks: [],
+                people: [],
+                personColors: {},
                 currentFilter: 'all',
-                editingTask: null
+                editingTask: null,
+                dataSource: 'none'
             },
 
-            init() {
-                this.loadData();
+            async init() {
+                await this.loadFromJSON();
                 this.render();
             },
 
-            loadData() {
-                const saved = localStorage.getItem('workBoardData');
-                if (saved) {
-                    this.data.tasks = JSON.parse(saved);
-                } else {
-                    this.resetDemo();
+            // 从外部 JSON 文件加载数据
+            async loadFromJSON() {
+                try {
+                    const cacheBuster = '?t=' + Date.now();
+                    const response = await fetch('data/tasks.json' + cacheBuster);
+                    if (!response.ok) throw new Error('HTTP ' + response.status);
+                    const jsonData = await response.json();
+
+                    // 转换数据格式
+                    this.data.people = jsonData.people || [];
+                    this.data.personColors = jsonData.personColors || {};
+                    this.data.tasks = (jsonData.tasks || []).map(t => ({
+                        id: t.id,
+                        title: t.title,
+                        project: t.project || '',
+                        desc: t.desc || '',
+                        assignee: t.owners[0] || '',
+                        collaborators: t.owners.slice(1),
+                        priority: t.priority || 'medium',
+                        deadline: t.ddl ? t.ddl.replace('T', ' ').replace(':00', '') : '',
+                        ddl: t.ddl,
+                        status: t.status || 'todo'
+                    }));
+
+                    const meta = jsonData.meta || {};
+                    this.data.dataSource = 'json';
+
+                    // 更新 UI
+                    const infoEl = document.getElementById('dataInfo');
+                    const updatedAt = meta.updatedAt ? new Date(meta.updatedAt).toLocaleString('zh-CN') : '未知';
+                    infoEl.textContent = `📡 数据来源: data/tasks.json | 更新时间: ${updatedAt}${meta.updatedBy ? ' | 更新者: ' + meta.updatedBy : ''}`;
+
+                    // 同步到 localStorage
+                    this.saveData();
+
+                    // 动态生成筛选按钮
+                    this.renderFilterButtons();
+                    // 动态填充负责人下拉
+                    this.populateAssigneeSelect();
+
+                } catch (err) {
+                    console.warn('从 JSON 加载失败，尝试从 localStorage 加载:', err);
+                    this.loadFromLocalStorage();
                 }
             },
 
-            saveData() {
-                localStorage.setItem('workBoardData', JSON.stringify(this.data.tasks));
+            loadFromLocalStorage() {
+                const saved = localStorage.getItem('workBoardData_v2');
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    this.data.tasks = parsed.tasks || [];
+                    this.data.people = parsed.people || ['王士坤', '王茜', '陈晓逸', '张静'];
+                    this.data.personColors = parsed.personColors || {};
+                    this.data.dataSource = 'localStorage';
+                    document.getElementById('dataInfo').textContent = '💾 数据来源: 本地缓存 (localStorage)';
+                } else {
+                    this.data.people = ['王士坤', '王茜', '陈晓逸', '张静'];
+                    this.data.dataSource = 'empty';
+                    document.getElementById('dataInfo').textContent = '⚠️ 无数据，请添加任务或导入数据';
+                }
+                this.renderFilterButtons();
+                this.populateAssigneeSelect();
             },
 
-            resetDemo() {
-                this.data.tasks = [
-                    { id: 1, title: '完成Q1季度报告', assignee: '王士坤', priority: 'high', deadline: '2024-03-15', status: 'inProgress', collaborators: ['王茜'] },
-                    { id: 2, title: '优化用户登录流程', assignee: '王茜', priority: 'medium', deadline: '2024-03-20', status: 'todo', collaborators: ['陈晓逸'] },
-                    { id: 3, title: '修复移动端适配问题', assignee: '陈晓逸', priority: 'high', deadline: '2024-03-12', status: 'review', collaborators: [] },
-                    { id: 4, title: '更新API文档', assignee: '张静', priority: 'low', deadline: '2024-03-25', status: 'todo', collaborators: [] },
-                    { id: 5, title: '测试支付模块', assignee: '王士坤', priority: 'high', deadline: '2024-03-18', status: 'inProgress', collaborators: ['王茜', '张静'] },
-                    { id: 6, title: '设计新功能原型', assignee: '王茜', priority: 'medium', deadline: '2024-03-22', status: 'done', collaborators: [] },
-                    { id: 7, title: '代码审查', assignee: '陈晓逸', priority: 'medium', deadline: '2024-03-14', status: 'inProgress', collaborators: ['王士坤'] },
-                    { id: 8, title: '准备技术分享', assignee: '张静', priority: 'low', deadline: '2024-03-28', status: 'todo', collaborators: [] }
-                ];
-                this.saveData();
-                this.render();
+            renderFilterButtons() {
+                const container = document.getElementById('filterButtons');
+                container.innerHTML = '<button class="filter-btn active" onclick="app.filterByPerson(\'all\', event)">全部</button>';
+                this.data.people.forEach(person => {
+                    container.innerHTML += `<button class="filter-btn" onclick="app.filterByPerson('${person}', event)">👤 ${person}</button>`;
+                });
+            },
+
+            populateAssigneeSelect() {
+                const select = document.getElementById('taskAssignee');
+                select.innerHTML = this.data.people.map(p => `<option value="${p}">${p}</option>`).join('');
+            },
+
+            saveData() {
+                localStorage.setItem('workBoardData_v2', JSON.stringify({
+                    tasks: this.data.tasks,
+                    people: this.data.people,
+                    personColors: this.data.personColors
+                }));
+            },
+
+            async reloadFromJSON() {
+                if (confirm('确定从 JSON 文件重新加载？本地编辑的数据将被覆盖。')) {
+                    await this.loadFromJSON();
+                    this.render();
+                }
             },
 
             render() {
@@ -568,51 +693,82 @@
             },
 
             renderTask(task) {
-                const priorityClass = `priority-${task.priority}`;
                 const priorityText = { high: '高', medium: '中', low: '低' }[task.priority];
+                const priorityTagClass = `priority-${task.priority}-tag`;
+
+                // 计算截止日期提示
+                let deadlineWarning = '';
+                if (task.ddl && task.status !== 'done') {
+                    const diff = (new Date(task.ddl) - new Date()) / 86400000;
+                    if (diff < 0) deadlineWarning = '<span class="deadline-warning deadline-overdue">已逾期</span>';
+                    else if (diff < 1) deadlineWarning = '<span class="deadline-warning deadline-today">今天截止</span>';
+                    else if (diff < 3) deadlineWarning = '<span class="deadline-warning deadline-soon">' + Math.ceil(diff) + '天后</span>';
+                }
+
+                const displayDeadline = task.ddl ? new Date(task.ddl).toLocaleDateString('zh-CN') : '无截止日期';
+
                 return `
-                    <div class="task-card" data-assignee="${task.assignee}" onclick="app.openEditTaskModal(${task.id})">
+                    <div class="task-card priority-${task.priority}" data-assignee="${task.assignee}" onclick="app.openEditTaskModal('${task.id}')">
                         <div class="task-header">
                             <span class="task-title">${task.title}</span>
-                            <span class="priority ${priorityClass}">${priorityText}</span>
+                            <span class="priority ${priorityTagClass}">${priorityText}</span>
                         </div>
+                        ${task.project ? `<div class="task-project">📁 <span class="project-tag">${task.project}</span></div>` : ''}
+                        ${task.desc ? `<div style="font-size:12px;color:#a0aec0;margin-top:4px;">${task.desc}</div>` : ''}
                         <div class="task-meta">
                             <div class="task-assignee">👤 ${task.assignee}</div>
-                            <div class="task-deadline">📅 ${task.deadline}</div>
-                            ${task.collaborators.length > 0 ? `
+                            <div class="task-deadline">📅 ${displayDeadline} ${deadlineWarning}</div>
+                            ${task.collaborators && task.collaborators.length > 0 ? `
                                 <div class="task-collaborators">
                                     🤝 ${task.collaborators.map(c => `<span class="collaborator-tag">${c}</span>`).join('')}
                                 </div>
                             ` : ''}
                         </div>
-                        <button class="btn btn-danger delete-btn" onclick="event.stopPropagation(); app.deleteTask(${task.id})">🗑️</button>
+                        <button class="btn btn-danger delete-btn" onclick="event.stopPropagation(); app.deleteTask('${task.id}')">🗑️</button>
                     </div>
                 `;
             },
 
             renderTimeline() {
                 const timeline = document.getElementById('timeline');
-                const sortedTasks = [...this.data.tasks].sort((a, b) =>
-                    new Date(a.deadline) - new Date(b.deadline)
+                const tasksWithDDL = this.data.tasks.filter(t => t.ddl);
+                const sortedTasks = [...tasksWithDDL].sort((a, b) =>
+                    new Date(a.ddl) - new Date(b.ddl)
                 );
 
-                timeline.innerHTML = sortedTasks.map(task => `
+                if (sortedTasks.length === 0) {
+                    timeline.innerHTML = '<div style="text-align:center;color:#a0aec0;padding:20px;">暂无设置截止日期的任务</div>';
+                    return;
+                }
+
+                timeline.innerHTML = sortedTasks.map(task => {
+                    const dt = new Date(task.ddl);
+                    const diff = (dt - new Date()) / 86400000;
+                    let warningHtml = '';
+                    if (task.status !== 'done') {
+                        if (diff < 0) warningHtml = '<span class="deadline-warning deadline-overdue">已逾期</span>';
+                        else if (diff < 1) warningHtml = '<span class="deadline-warning deadline-today">今天截止</span>';
+                        else if (diff < 3) warningHtml = '<span class="deadline-warning deadline-soon">' + Math.ceil(diff) + '天后</span>';
+                    }
+
+                    return `
                     <div class="timeline-item">
-                        <div class="timeline-date">${task.deadline}</div>
+                        <div class="timeline-date">${dt.toLocaleDateString('zh-CN')} ${warningHtml}</div>
+                        ${task.project ? `<span class="timeline-project">${task.project}</span>` : ''}
                         <div class="timeline-task">${task.title}</div>
                         <div class="timeline-assignee">${task.assignee}</div>
-                    </div>
-                `).join('');
+                    </div>`;
+                }).join('');
             },
 
-            filterByPerson(person) {
+            filterByPerson(person, event) {
                 this.data.currentFilter = person;
 
                 // Update filter buttons
                 document.querySelectorAll('.filter-btn').forEach(btn => {
                     btn.classList.remove('active');
                 });
-                event.target.classList.add('active');
+                if (event && event.target) event.target.classList.add('active');
 
                 this.applyFilter();
             },
@@ -644,11 +800,20 @@
                 this.data.editingTask = task;
                 document.getElementById('modalTitle').textContent = '编辑任务';
                 document.getElementById('taskTitle').value = task.title;
+                document.getElementById('taskProject').value = task.project || '';
                 document.getElementById('taskAssignee').value = task.assignee;
                 document.getElementById('taskPriority').value = task.priority;
-                document.getElementById('taskDeadline').value = task.deadline;
-                document.getElementById('taskCollaborators').value = task.collaborators.join(', ');
+                document.getElementById('taskDesc').value = task.desc || '';
+                document.getElementById('taskCollaborators').value = (task.collaborators || []).join(', ');
                 document.getElementById('taskStatus').value = task.status;
+
+                // 处理截止日期
+                if (task.ddl) {
+                    const dt = new Date(task.ddl);
+                    const local = new Date(dt.getTime() - dt.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+                    document.getElementById('taskDeadline').value = local;
+                }
+
                 document.getElementById('taskModal').classList.add('active');
             },
 
@@ -666,12 +831,32 @@
             },
 
             exportData() {
-                const dataStr = JSON.stringify(this.data.tasks, null, 2);
+                // 导出为与 data/tasks.json 兼容的格式
+                const exportObj = {
+                    meta: {
+                        title: "团队工作看板",
+                        updatedAt: new Date().toISOString(),
+                        updatedBy: "增强版导出"
+                    },
+                    people: this.data.people,
+                    personColors: this.data.personColors,
+                    tasks: this.data.tasks.map(t => ({
+                        id: t.id,
+                        project: t.project || '',
+                        title: t.title,
+                        desc: t.desc || '',
+                        owners: [t.assignee, ...(t.collaborators || [])],
+                        status: t.status,
+                        priority: t.priority,
+                        ddl: t.ddl || null
+                    }))
+                };
+                const dataStr = JSON.stringify(exportObj, null, 2);
                 const blob = new Blob([dataStr], { type: 'application/json' });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = `work-board-${new Date().toISOString().split('T')[0]}.json`;
+                a.download = `tasks-${new Date().toISOString().split('T')[0]}.json`;
                 a.click();
                 URL.revokeObjectURL(url);
             },
@@ -687,16 +872,41 @@
                 const reader = new FileReader();
                 reader.onload = (e) => {
                     try {
-                        const tasks = JSON.parse(e.target.result);
-                        this.data.tasks = tasks;
+                        const jsonData = JSON.parse(e.target.result);
+
+                        // 支持两种格式：原始格式和增强版格式
+                        if (jsonData.tasks && jsonData.tasks[0] && jsonData.tasks[0].owners) {
+                            // 原始 data/tasks.json 格式
+                            this.data.people = jsonData.people || this.data.people;
+                            this.data.personColors = jsonData.personColors || this.data.personColors;
+                            this.data.tasks = jsonData.tasks.map(t => ({
+                                id: t.id,
+                                title: t.title,
+                                project: t.project || '',
+                                desc: t.desc || '',
+                                assignee: t.owners[0] || '',
+                                collaborators: t.owners.slice(1),
+                                priority: t.priority || 'medium',
+                                deadline: t.ddl ? new Date(t.ddl).toLocaleDateString('zh-CN') : '',
+                                ddl: t.ddl,
+                                status: t.status || 'todo'
+                            }));
+                        } else {
+                            // 增强版直接格式
+                            this.data.tasks = jsonData.tasks || jsonData;
+                        }
+
                         this.saveData();
+                        this.renderFilterButtons();
+                        this.populateAssigneeSelect();
                         this.render();
                         alert('导入成功！');
                     } catch (err) {
-                        alert('导入失败，文件格式错误');
+                        alert('导入失败，文件格式错误: ' + err.message);
                     }
                 };
                 reader.readAsText(file);
+                event.target.value = '';  // 重置 input
             }
         };
 
@@ -704,11 +914,16 @@
         document.getElementById('taskForm').addEventListener('submit', (e) => {
             e.preventDefault();
 
+            const deadlineVal = document.getElementById('taskDeadline').value;
+
             const taskData = {
                 title: document.getElementById('taskTitle').value,
+                project: document.getElementById('taskProject').value,
                 assignee: document.getElementById('taskAssignee').value,
                 priority: document.getElementById('taskPriority').value,
-                deadline: document.getElementById('taskDeadline').value,
+                deadline: deadlineVal ? new Date(deadlineVal).toLocaleDateString('zh-CN') : '',
+                ddl: deadlineVal ? new Date(deadlineVal).toISOString() : null,
+                desc: document.getElementById('taskDesc').value,
                 status: document.getElementById('taskStatus').value,
                 collaborators: document.getElementById('taskCollaborators').value
                     .split(',')
@@ -721,7 +936,7 @@
                 Object.assign(app.data.editingTask, taskData);
             } else {
                 // Add new task
-                taskData.id = Date.now();
+                taskData.id = 'new_' + Date.now();
                 app.data.tasks.push(taskData);
             }
 

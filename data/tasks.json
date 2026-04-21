@@ -1,0 +1,177 @@
+{
+  "meta": {
+    "title": "团队工作看板",
+    "updatedAt": "2026-04-21T10:00:00",
+    "updatedBy": "王士坤"
+  },
+  "people": ["王士坤", "王茜", "陈晓逸", "张静"],
+  "personColors": {
+    "张静": "linear-gradient(135deg, #667eea, #764ba2)",
+    "王茜": "linear-gradient(135deg, #f093fb, #f5576c)",
+    "陈晓逸": "linear-gradient(135deg, #4facfe, #00f2fe)",
+    "王士坤": "linear-gradient(135deg, #43e97b, #38f9d7)",
+    "王栖": "linear-gradient(135deg, #fa709a, #fee140)"
+  },
+  "tasks": [
+    {
+      "id": "1a",
+      "project": "成交转化调研",
+      "title": "确定选择哪些竞品",
+      "desc": "斑马和竞品体验课转正调研",
+      "owners": ["张静", "王栖"],
+      "status": "doing",
+      "priority": "high",
+      "ddl": "2026-04-17T18:00:00"
+    },
+    {
+      "id": "1b",
+      "project": "成交转化调研",
+      "title": "确定调研报告重点关注部分",
+      "desc": "调研报告的结构和重点方向",
+      "owners": ["张静", "王栖"],
+      "status": "todo",
+      "priority": "high",
+      "ddl": null
+    },
+    {
+      "id": "1c",
+      "project": "成交转化调研",
+      "title": "调研报告产出",
+      "desc": "完成完整的调研报告",
+      "owners": ["张静", "王栖"],
+      "status": "todo",
+      "priority": "high",
+      "ddl": "2026-05-15T18:00:00"
+    },
+    {
+      "id": "2a",
+      "project": "系统课视频拍摄",
+      "title": "确定第一批拍摄方向",
+      "desc": "观看账号视频、暴姐视频筛选优先级",
+      "owners": ["王茜"],
+      "status": "doing",
+      "priority": "high",
+      "ddl": "2026-04-20T18:00:00"
+    },
+    {
+      "id": "2b",
+      "project": "系统课视频拍摄",
+      "title": "确定视频风格",
+      "desc": "视频风格问题待确认",
+      "owners": ["王茜"],
+      "status": "todo",
+      "priority": "high",
+      "ddl": null
+    },
+    {
+      "id": "2c",
+      "project": "系统课视频拍摄",
+      "title": "拍摄一批主页视频且剪辑完成",
+      "desc": "",
+      "owners": ["王茜"],
+      "status": "todo",
+      "priority": "high",
+      "ddl": "2026-04-27T18:00:00"
+    },
+    {
+      "id": "3a",
+      "project": "代理商主播筛选",
+      "title": "完成代理商主播筛选建议",
+      "desc": "",
+      "owners": ["张静", "王茜"],
+      "status": "doing",
+      "priority": "high",
+      "ddl": "2026-04-17T18:00:00"
+    },
+    {
+      "id": "4a",
+      "project": "组品策略",
+      "title": "测试方案（价格、策略等）",
+      "desc": "",
+      "owners": ["王茜"],
+      "status": "doing",
+      "priority": "medium",
+      "ddl": "2026-04-27T18:00:00"
+    },
+    {
+      "id": "6a",
+      "project": "绘本机项目",
+      "title": "AI素材专项产出20条",
+      "desc": "增加AI素材权重，当成专项来做",
+      "owners": ["陈晓逸"],
+      "status": "doing",
+      "priority": "high",
+      "ddl": null
+    },
+    {
+      "id": "6b",
+      "project": "绘本机项目",
+      "title": "混剪素材前3秒开头优化",
+      "desc": "跑量素材混剪，手动处理提供代理样本量",
+      "owners": ["陈晓逸"],
+      "status": "doing",
+      "priority": "high",
+      "ddl": "2026-04-22T18:00:00"
+    },
+    {
+      "id": "7a",
+      "project": "系统课投放",
+      "title": "系统课投放方案沟通",
+      "desc": "投放项目交流及方案讨论中",
+      "owners": ["陈晓逸"],
+      "status": "blocked",
+      "priority": "medium",
+      "ddl": null
+    },
+    {
+      "id": "7b",
+      "project": "微信豆投放",
+      "title": "微信豆投放复盘和方案对齐",
+      "desc": "讨论中，还没有方向",
+      "owners": ["陈晓逸"],
+      "status": "blocked",
+      "priority": "medium",
+      "ddl": null
+    },
+    {
+      "id": "8a",
+      "project": "系统课代理直播",
+      "title": "敲定代理商选择并推进流程",
+      "desc": "确定哪家代理商，下周开始推进直播流程",
+      "owners": ["王士坤"],
+      "status": "doing",
+      "priority": "high",
+      "ddl": null
+    },
+    {
+      "id": "5a",
+      "project": "工作细节",
+      "title": "体验课178节素养课资料",
+      "desc": "",
+      "owners": ["王士坤"],
+      "status": "todo",
+      "priority": "low",
+      "ddl": null
+    },
+    {
+      "id": "5b",
+      "project": "工作细节",
+      "title": "工具效率建设",
+      "desc": "",
+      "owners": ["王士坤"],
+      "status": "todo",
+      "priority": "low",
+      "ddl": null
+    },
+    {
+      "id": "5c",
+      "project": "工作细节",
+      "title": "素材拍摄时间沟通确定",
+      "desc": "",
+      "owners": ["王士坤"],
+      "status": "todo",
+      "priority": "low",
+      "ddl": null
+    }
+  ]
+}

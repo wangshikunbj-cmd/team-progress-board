@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>团队工作进度看板</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #e0e0e0;
+        }
+        .container {
+            max-width: 700px;
+            width: 90%;
+            text-align: center;
+        }
+        h1 {
+            font-size: 36px;
+            margin-bottom: 12px;
+            color: #fff;
+        }
+        .subtitle {
+            font-size: 16px;
+            color: rgba(255,255,255,0.5);
+            margin-bottom: 48px;
+        }
+        .cards {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-bottom: 48px;
+        }
+        .card {
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            padding: 32px 24px;
+            text-decoration: none;
+            color: #fff;
+            transition: all 0.3s;
+        }
+        .card:hover {
+            background: rgba(255,255,255,0.12);
+            transform: translateY(-4px);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.3);
+        }
+        .card .icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+        .card h2 {
+            font-size: 20px;
+            margin-bottom: 8px;
+        }
+        .card p {
+            font-size: 13px;
+            color: rgba(255,255,255,0.5);
+            line-height: 1.5;
+        }
+        .card .badge {
+            display: inline-block;
+            margin-top: 12px;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        .card .badge.readonly {
+            background: rgba(107,207,255,0.15);
+            color: #6bcfff;
+        }
+        .card .badge.editable {
+            background: rgba(81,207,102,0.15);
+            color: #51cf66;
+        }
+
+        .how-to-update {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px;
+            padding: 24px;
+            text-align: left;
+        }
+        .how-to-update h3 {
+            font-size: 16px;
+            color: rgba(255,255,255,0.7);
+            margin-bottom: 16px;
+        }
+        .how-to-update ol {
+            padding-left: 20px;
+        }
+        .how-to-update li {
+            font-size: 13px;
+            color: rgba(255,255,255,0.45);
+            margin-bottom: 8px;
+            line-height: 1.5;
+        }
+        .how-to-update code {
+            background: rgba(107,207,255,0.1);
+            color: #6bcfff;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+
+        @media (max-width: 600px) {
+            .cards { grid-template-columns: 1fr; }
+            h1 { font-size: 28px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📋 团队工作进度看板</h1>
+        <p class="subtitle">选择看板版本查看团队任务进度</p>
+
+        <div class="cards">
+            <a href="work-board.html" class="card">
+                <div class="icon">🌙</div>
+                <h2>暗色全览版</h2>
+                <p>人员维度展示、DDL 时间线、点击筛选</p>
+                <span class="badge readonly">只读展示</span>
+            </a>
+            <a href="work-board-enhanced.html" class="card">
+                <div class="icon">✏️</div>
+                <h2>增强编辑版</h2>
+                <p>添加/编辑/删除任务、导入导出、人员筛选</p>
+                <span class="badge editable">可编辑</span>
+            </a>
+        </div>
+
+        <div class="how-to-update">
+            <h3>📡 如何更新看板数据？</h3>
+            <ol>
+                <li>编辑 <code>data/tasks.json</code> 文件（修改任务信息）</li>
+                <li>提交并推送到 GitHub：<code>git add . && git commit -m "更新任务" && git push</code></li>
+                <li>等待 1-2 分钟，GitHub Pages 自动部署</li>
+                <li>刷新看板页面即可看到最新数据</li>
+            </ol>
+        </div>
+    </div>
+</body>
+</html>
